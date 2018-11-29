@@ -50,32 +50,12 @@ void touchStart() {
 }
 
 
-int32_t dumpRegs(uint16_t reg, uint8_t len){
+uint8_t dumpCFG(){
     
-    uint8_t buffer[200];
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    ESP_LOGD(GOODIX,": set reg");
-    i2c_master_write_byte(cmd, (uint8_t)(( 0x5d << 1 ) | I2C_MASTER_WRITE), I2C_MASTER_ACK);
-     i2c_master_write_byte(cmd, (uint8_t)(reg >> 8), I2C_MASTER_ACK);
-    i2c_master_write_byte(cmd, (uint8_t)(reg & 0xff), I2C_MASTER_ACK);
-    i2c_master_stop(cmd);
-    esp_err_t esp_i2c_err = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/ portTICK_RATE_MS);
-    ESP_LOGD(GOODIX,"i2c master read error: %d", esp_i2c_err);
-    i2c_cmd_link_delete(cmd);
-  // make a break and continue with the read
-    cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (uint8_t)(( 0x5d << 1 ) | I2C_MASTER_READ), I2C_MASTER_ACK);
-    ESP_LOGD(GOODIX,": 0x5d << 1 ) | I2C_MASTER_READ");
-    ESP_ERROR_CHECK(i2c_master_read(cmd, buffer, (size_t)len - 1 , I2C_MASTER_ACK));
-    ESP_ERROR_CHECK(i2c_master_read_byte(cmd, &buffer[len], I2C_MASTER_NACK));
-    i2c_master_stop(cmd);
-    esp_i2c_err = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/ portTICK_RATE_MS);
-    ESP_LOGD(GOODIX,"i2c master read error: %d", esp_i2c_err);
-    i2c_cmd_link_delete(cmd);
+uint8_t buffer[GOODIX_CONFIG_911_LENGTH];
+uint8_t i2c_err = touch.read(GOODIX_REG_CONFIG_DATA, buffer, GOODIX_CONFIG_911_LENGTH);
 
-if (esp_i2c_err != ESP_OK){
+if (i2c_err != ESP_OK){
   ESP_LOGD(GOODIX,"---error---");
   ESP_LOGD(GOODIX,"----------");
 }
@@ -84,26 +64,22 @@ else{
   uint8_t t=0;
   printf("Consider to make a backup now:\r\n");
   printf("uint8_t g911xCurrentFW[] = {");
-  for (uint8_t i=0; i<len; i++) {
+  for (uint8_t i=0; i<(GOODIX_CONFIG_911_LENGTH-1); i++) {
     printf("0x%02x, ", buffer[i]);
     t++;
     if (t>=16) {
-    printf("\r\n");
-    t=0;
+      printf("\r\n");
+      t=0;
     }
   }
-  printf("};\r\n");
+  printf("0x%02x};\r\n",buffer[GOODIX_CONFIG_911_LENGTH-1]);
   ESP_LOGD(GOODIX,"----------");
-
-}
-    // success = true;
-  return esp_i2c_err;
   }
-  // return success;
+  return i2c_err;
+}
 
 
-
-void my_setup(){
+void i2c_setup(){
   i2c_config_t i2c_master_config;
   i2c_master_config.mode = I2C_MODE_MASTER;
   i2c_master_config.sda_io_num = (gpio_num_t)GOODIX_SDA;
@@ -146,8 +122,7 @@ void i2c_scan()
 
 void loop_task(void *pvParameter)
 {
-    touch.setHandler(handleTouch);
-    touchStart();
+
     ESP_LOGI(GOODIX,": touch started");
   
     while(1) { 
@@ -164,11 +139,14 @@ void app_main() {
   ESP_LOGI(GOODIX,": Goodix GT911x touch driver");
   // gt911_reset();
   vTaskDelay(300 / portTICK_PERIOD_MS);
-  my_setup(); // This must move to Goodix.cpp later !!
+  i2c_setup(); // This must move to Goodix.cpp later !!
   ESP_LOGI(GOODIX,": Goodix I2C Setup complete");
   i2c_scan(); // just for basic debugging
+
+  touch.setHandler(handleTouch);
+  touchStart();
   
-  dumpRegs(GOODIX_REG_CONFIG_DATA, GOODIX_CONFIG_911_LENGTH); // you can copy/paste this into GoodixFW.h
+  dumpCFG(); // you can copy/paste this into GoodixFW.h
 
   vTaskDelay(300 / portTICK_PERIOD_MS);
 
