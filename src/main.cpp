@@ -17,10 +17,6 @@
 #define INT_PIN GPIO_NUM_12
 #define RST_PIN GPIO_NUM_14
 
-// #define GOODIX_I2C_ADDR        0x5d
-
-// #define GOODIX_int             18
-// #define GOODIX_reset           19
 #define GOODIX_SDA             GPIO_NUM_21
 #define GOODIX_SCL             GPIO_NUM_22
 
@@ -86,7 +82,8 @@ if (esp_i2c_err != ESP_OK){
 else{  
   ESP_LOGD(GOODIX,"-no--error--");
   uint8_t t=0;
-   printf("-> buffer: ");
+  printf("Consider to make a backup now:\r\n");
+  printf("uint8_t g911xCurrentFW[] = {");
   for (uint8_t i=0; i<len; i++) {
     printf("0x%02x, ", buffer[i]);
     t++;
@@ -95,6 +92,7 @@ else{
     t=0;
     }
   }
+  printf("};\r\n");
   ESP_LOGD(GOODIX,"----------");
 
 }
@@ -130,11 +128,11 @@ void i2c_scan()
       foundDevices++;
 		}
 		i2c_cmd_link_delete(cmd);
-	}
-  if (foundDevices == 0)
-  {
-    printf("-> found NO devices");
-  }
+	  }
+    if (foundDevices == 0)
+    {
+      printf("-> found NO devices");
+    }
 }
 
 // void gt911_reset(void){
@@ -166,19 +164,14 @@ void app_main() {
   ESP_LOGI(GOODIX,": Goodix GT911x touch driver");
   // gt911_reset();
   vTaskDelay(300 / portTICK_PERIOD_MS);
-  my_setup();
+  my_setup(); // This must move to Goodix.cpp later !!
   ESP_LOGI(GOODIX,": Goodix I2C Setup complete");
+  i2c_scan(); // just for basic debugging
   
+  dumpRegs(GOODIX_REG_CONFIG_DATA, GOODIX_CONFIG_911_LENGTH); // you can copy/paste this into GoodixFW.h
+
   vTaskDelay(300 / portTICK_PERIOD_MS);
 
-  i2c_scan();
-  
-  dumpRegs(GOODIX_REG_CONFIG_DATA, GOODIX_CONFIG_911_LENGTH);
-
-  vTaskDelay(1300 / portTICK_PERIOD_MS);
-
   xTaskCreate(&loop_task, "loop_task", 8192, NULL, 5, NULL);
-  
-
 }
 }
