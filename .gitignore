@@ -4,3 +4,5 @@
 .vscode/.browse.c_cpp*
 .vscode/c_cpp_properties*
 .vscode/launch.json
+.vscode
+
