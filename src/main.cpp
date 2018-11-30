@@ -42,7 +42,6 @@ uint8_t dumpCFG(){
   uint8_t i2c_err = touch.read(GOODIX_REG_CONFIG_DATA, buffer, GOODIX_CONFIG_911_LENGTH);
   if (i2c_err != ESP_OK){
     ESP_LOGD(LOG_TAG,"---error---");
-    ESP_LOGD(LOG_TAG,"----------");
   }
   else{  
   ESP_LOGD(LOG_TAG,"-no--error--");
@@ -61,6 +60,25 @@ uint8_t dumpCFG(){
   ESP_LOGD(LOG_TAG,"----------");
   }
   return i2c_err;
+}
+
+uint8_t dumpRegID(){
+  uint8_t buffer[11];
+  uint8_t i2c_err = touch.read(GOODIX_REG_ID, buffer, 11);
+  if (i2c_err != ESP_OK){
+    ESP_LOGD(LOG_TAG,"---error---");
+  }
+  else{  
+  ESP_LOGD(LOG_TAG,"-no--error--");
+  printf("Product-ID %c%c%c%c:\r\n",buffer[0],buffer[1],buffer[2],buffer[3]);
+  printf("Firmware-Version %x%x:\r\n",buffer[5],buffer[4]);
+  uint16_t res = buffer[6] | buffer[7] << 8;
+  printf("X-Resolution %d:\r\n",res);
+  res = buffer[8] | buffer[9] << 8;
+  printf("Y-Resolution %d:\r\n",res);
+  printf("Vendor-ID %x:\r\n",buffer[10]);
+  }
+  return i2c_err;  
 }
 
 
@@ -129,6 +147,8 @@ void app_main() {
   touchStart();
   
   dumpCFG(); // you can copy/paste this into GoodixFW.h
+
+  dumpRegID();
 
   vTaskDelay(300 / portTICK_PERIOD_MS);
 
