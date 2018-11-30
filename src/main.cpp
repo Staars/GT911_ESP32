@@ -1,40 +1,28 @@
-// FreeRTOS includes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_system.h"
-
-
 #include "Goodix.h"
 #include "GoodixFW.h"
 
-
-
-#define INT_PIN GPIO_NUM_12
-#define RST_PIN GPIO_NUM_14
-
+#define INT_PIN                GPIO_NUM_12
+#define RST_PIN                GPIO_NUM_14
 #define GOODIX_SDA             GPIO_NUM_21
 #define GOODIX_SCL             GPIO_NUM_22
 
-#define GOODIX "GOODIX"
-
-
+#define LOG_TAG "GOODIX"
 
 Goodix touch = Goodix();
-char *myID;
-
 
 extern "C" {
   
 void handleTouch(int8_t contacts, GTPoint *points) {
-  ESP_LOGD(GOODIX,"Contacts: %d", contacts);
- 
+  ESP_LOGD(LOG_TAG,"Contacts: %d", contacts);
   for (uint8_t i = 0; i < contacts; i++) {
-    // ESP_LOGI(GOODIX,"C%d: #%d %d,%d s:%d", i, points[i].trackId, points[i].x, points[i].y, points[i].area);
+    // ESP_LOGI(LOG_TAG,"C%d: #%d %d,%d s:%d", i, points[i].trackId, points[i].x, points[i].y, points[i].area);
    printf("C%d: #%d %d,%d s:%d\n", i, points[i].trackId, points[i].x, points[i].y, points[i].area);
 
   }
@@ -42,25 +30,22 @@ void handleTouch(int8_t contacts, GTPoint *points) {
 
 void touchStart() {
  if (touch.begin(INT_PIN, RST_PIN)!=true) {
-   ESP_LOGE(GOODIX,"Module reset failed");
+   ESP_LOGE(LOG_TAG,"Module reset failed");
   } else {
-    ESP_LOGI(GOODIX,"Module reset OK");
+    ESP_LOGI(LOG_TAG,"Module reset OK");
   }
-  ESP_LOGI(GOODIX,"Check ACK on addr request on 0x%x",touch.i2cAddr);
+  ESP_LOGI(LOG_TAG,"Check ACK on addr request on 0x%x",touch.i2cAddr);
 }
-
 
 uint8_t dumpCFG(){
-    
-uint8_t buffer[GOODIX_CONFIG_911_LENGTH];
-uint8_t i2c_err = touch.read(GOODIX_REG_CONFIG_DATA, buffer, GOODIX_CONFIG_911_LENGTH);
-
-if (i2c_err != ESP_OK){
-  ESP_LOGD(GOODIX,"---error---");
-  ESP_LOGD(GOODIX,"----------");
-}
-else{  
-  ESP_LOGD(GOODIX,"-no--error--");
+  uint8_t buffer[GOODIX_CONFIG_911_LENGTH];
+  uint8_t i2c_err = touch.read(GOODIX_REG_CONFIG_DATA, buffer, GOODIX_CONFIG_911_LENGTH);
+  if (i2c_err != ESP_OK){
+    ESP_LOGD(LOG_TAG,"---error---");
+    ESP_LOGD(LOG_TAG,"----------");
+  }
+  else{  
+  ESP_LOGD(LOG_TAG,"-no--error--");
   uint8_t t=0;
   printf("Consider to make a backup now:\r\n");
   printf("uint8_t g911xCurrentFW[] = {");
@@ -73,7 +58,7 @@ else{
     }
   }
   printf("0x%02x};\r\n",buffer[GOODIX_CONFIG_911_LENGTH-1]);
-  ESP_LOGD(GOODIX,"----------");
+  ESP_LOGD(LOG_TAG,"----------");
   }
   return i2c_err;
 }
@@ -87,8 +72,8 @@ void i2c_setup(){
   i2c_master_config.scl_io_num = (gpio_num_t)GOODIX_SCL;
   i2c_master_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
   i2c_master_config.master.clk_speed = 400000;
-  i2c_param_config((i2c_port_t)0, &i2c_master_config);
-  i2c_driver_install((i2c_port_t)0, i2c_master_config.mode, 0, 0, 0);
+  i2c_param_config(I2C_NUM_0, &i2c_master_config);
+  i2c_driver_install(I2C_NUM_0, i2c_master_config.mode, 0, 0, 0);
 }
 
 void i2c_scan()
@@ -122,9 +107,7 @@ void i2c_scan()
 
 void loop_task(void *pvParameter)
 {
-
-    ESP_LOGI(GOODIX,": touch started");
-  
+    ESP_LOGI(LOG_TAG,": touch started"); 
     while(1) { 
 		vTaskDelay(10 / portTICK_RATE_MS);	
       touch.loop();
@@ -132,15 +115,14 @@ void loop_task(void *pvParameter)
 }
 
 
-
 void app_main() {
   vTaskDelay(300 / portTICK_PERIOD_MS);
-  esp_log_level_set(GOODIX, ESP_LOG_DEBUG);
-  ESP_LOGI(GOODIX,": Goodix GT911x touch driver");
+  esp_log_level_set(LOG_TAG, ESP_LOG_DEBUG);
+  ESP_LOGI(LOG_TAG,": Goodix GT911x touch driver");
   // gt911_reset();
   vTaskDelay(300 / portTICK_PERIOD_MS);
-  i2c_setup(); // This must move to Goodix.cpp later !!
-  ESP_LOGI(GOODIX,": Goodix I2C Setup complete");
+  i2c_setup();  // setup I2C outside of the library
+  ESP_LOGI(LOG_TAG,": Goodix I2C Setup complete");
   i2c_scan(); // just for basic debugging
 
   touch.setHandler(handleTouch);
