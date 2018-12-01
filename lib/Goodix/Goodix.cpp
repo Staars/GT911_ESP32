@@ -104,7 +104,7 @@ void attachInterrupt(gpio_num_t pin, gpio_isr_t handler){
   gpio_pad_select_gpio(pin);
   gpio_set_direction(pin, GPIO_MODE_INPUT);
   gpio_set_intr_type(pin, GPIO_INTR_POSEDGE);
-  xTaskCreate(isr_task, "isr_task", 2048, NULL, 10, NULL);
+  xTaskCreate(isr_task, "isr_task", 512, NULL, 10, NULL);
   gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
   gpio_isr_handler_add(pin, handler, NULL);
 }
