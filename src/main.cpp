@@ -8,10 +8,11 @@
 #include "Goodix.h"
 #include "GoodixFW.h"
 
-#define INT_PIN                GPIO_NUM_12
-#define RST_PIN                GPIO_NUM_14
-#define GOODIX_SDA             GPIO_NUM_21
-#define GOODIX_SCL             GPIO_NUM_22
+#define INT_PIN                12
+#define RST_PIN                14
+#define GOODIX_SDA             21
+#define GOODIX_SCL             22
+#define GOODIX_SPEED           100000
 
 #define LOG_TAG "GOODIX"
 
@@ -24,7 +25,6 @@ void handleTouch(int8_t contacts, GTPoint *points) {
   for (uint8_t i = 0; i < contacts; i++) {
     // ESP_LOGI(LOG_TAG,"C%d: #%d %d,%d s:%d", i, points[i].trackId, points[i].x, points[i].y, points[i].area);
    printf("C%d: #%d %d,%d s:%d\n", i, points[i].trackId, points[i].x, points[i].y, points[i].area);
-
   }
 }
 
@@ -81,19 +81,6 @@ uint8_t dumpRegID(){
   return i2c_err;  
 }
 
-
-void i2c_setup(){
-  i2c_config_t i2c_master_config;
-  i2c_master_config.mode = I2C_MODE_MASTER;
-  i2c_master_config.sda_io_num = (gpio_num_t)GOODIX_SDA;
-  i2c_master_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  i2c_master_config.scl_io_num = (gpio_num_t)GOODIX_SCL;
-  i2c_master_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  i2c_master_config.master.clk_speed = 400000;
-  i2c_param_config(I2C_NUM_0, &i2c_master_config);
-  i2c_driver_install(I2C_NUM_0, i2c_master_config.mode, 0, 0, 0);
-}
-
 void i2c_scan()
 {
     uint8_t foundDevices = 0;
@@ -114,14 +101,6 @@ void i2c_scan()
     }
 }
 
-// void gt911_reset(void){
-//   gpio_pad_select_gpio(RST_PIN);
-//   gpio_set_direction((gpio_num_t)RST_PIN, GPIO_MODE_OUTPUT);
-//   gpio_set_level((gpio_num_t)RST_PIN, 1);
-//   vTaskDelay(300 / portTICK_PERIOD_MS);
-//   gpio_set_level((gpio_num_t)RST_PIN, 0);
-//   vTaskDelay(300 / portTICK_PERIOD_MS);
-// }
 
 void loop_task(void *pvParameter)
 {
@@ -137,9 +116,8 @@ void app_main() {
   vTaskDelay(300 / portTICK_PERIOD_MS);
   esp_log_level_set(LOG_TAG, ESP_LOG_DEBUG);
   ESP_LOGI(LOG_TAG,": Goodix GT911x touch driver");
-  // gt911_reset();
   vTaskDelay(300 / portTICK_PERIOD_MS);
-  i2c_setup();  // setup I2C outside of the library
+  touch.i2cSetup(GOODIX_SDA, GOODIX_SCL, GOODIX_SPEED); 
   ESP_LOGI(LOG_TAG,": Goodix I2C Setup complete");
   i2c_scan(); // just for basic debugging
 

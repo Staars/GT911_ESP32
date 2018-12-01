@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "driver/gpio.h"
 #include "GoodixStructs.h"
 
 #define GOODIX_OK   0
@@ -107,6 +108,7 @@ class Goodix {
     bool reset();
     uint8_t test();
     void loop();
+    void i2cSetup(uint8_t sda, uint8_t scl, uint32_t speed);
 
     uint8_t write(uint16_t reg, uint8_t *buf, size_t len);
     uint8_t write(uint16_t reg, uint8_t value);

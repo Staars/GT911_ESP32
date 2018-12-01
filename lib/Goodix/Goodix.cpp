@@ -86,6 +86,19 @@ bool Goodix::begin(uint8_t interruptPin, uint8_t resetPin, uint8_t addr) {
 
   return result;
 }
+
+void Goodix::i2cSetup(uint8_t sda, uint8_t scl, uint32_t speed){
+  i2c_config_t i2c_master_config;
+  i2c_master_config.mode = I2C_MODE_MASTER;
+  i2c_master_config.sda_io_num = (gpio_num_t)sda;
+  i2c_master_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  i2c_master_config.scl_io_num = (gpio_num_t)scl;
+  i2c_master_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  i2c_master_config.master.clk_speed = speed;
+  i2c_param_config(I2C_NUM_0, &i2c_master_config);
+  i2c_driver_install(I2C_NUM_0, i2c_master_config.mode, 0, 0, 0);
+}
+
 void attachInterrupt(gpio_num_t pin, gpio_isr_t handler){
   xSemaphore = xSemaphoreCreateBinary();
   gpio_pad_select_gpio(pin);
